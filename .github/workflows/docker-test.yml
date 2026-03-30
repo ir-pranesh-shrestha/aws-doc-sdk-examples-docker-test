@@ -2,10 +2,7 @@ name: Docker Image CI (Local Build Only)
 
 on:
   pull_request:
-    types:
-      - closed
-    branches:
-      - 'main'
+    types: [opened, synchronize, reopened]
 
 jobs:
   build_images:
