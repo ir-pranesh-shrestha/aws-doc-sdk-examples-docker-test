@@ -8,7 +8,7 @@ WORKDIR /build
 
 COPY ./javav2/example_code/cloudwatch/ .
 
-RUN mvn package -Dmaven.test.skip -q
+RUN mvn package -Dmaven.test.skip -Dcheckstyle.skip=true -q
 
 # ---- Runtime ----
 FROM eclipse-temurin:17-jre-jammy

@@ -9,13 +9,13 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0
 WORKDIR /dotnetv3
 
 # Copy project file first for cache
-COPY ./dotnetv3/SES/*.csproj ./SES/
+COPY ./dotnetv3/SES/Actions/SESActions.csproj ./SES/Actions/
 
-RUN cd SES && dotnet restore
+RUN cd SES && dotnet restore Actions/SESActions.csproj
 
 # Copy remaining source
 COPY ./dotnetv3/SES/ ./SES/
 
-RUN cd SES && dotnet build -c Release
+RUN cd SES && dotnet build Actions/SESActions.csproj -c Release
 
 CMD ["bash"]

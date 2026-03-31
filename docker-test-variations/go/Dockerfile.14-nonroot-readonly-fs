@@ -11,7 +11,7 @@ COPY ./gov2/ .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     cd dynamodb && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /dynamodb-app ./...
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /dynamodb-app ./cmd/
 
 FROM alpine:3.18
 

@@ -10,8 +10,8 @@ WORKDIR /src
 COPY ./dotnetv3/SES/ ./SES/
 
 RUN cd SES && \
-    dotnet restore && \
-    dotnet publish -c Release \
+    dotnet restore Actions/SESActions.csproj && \
+    dotnet publish Actions/SESActions.csproj -c Release \
         --self-contained true \
         -r linux-x64 \
         -p:PublishSingleFile=true \
@@ -27,4 +27,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 80
 
-CMD ["./SESV2_Lambda_Example"]
+CMD ["./SESActions"]

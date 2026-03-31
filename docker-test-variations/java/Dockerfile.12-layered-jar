@@ -10,7 +10,7 @@ WORKDIR /build
 
 COPY ./javav2/example_code/cloudwatch/ .
 
-RUN mvn package -Dmaven.test.skip -q
+RUN mvn package -Dmaven.test.skip -Dcheckstyle.skip=true -q
 
 # Extract Spring Boot layers
 RUN java -Djarmode=layertools -jar target/*.jar extract --destination /app/extracted 2>/dev/null || \

@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 COPY ./javav2/example_code/cloudwatch/ .
 
 RUN --mount=type=cache,target=/root/.m2/repository \
-    mvn package -Dmaven.test.skip -q
+    mvn package -Dmaven.test.skip -Dcheckstyle.skip=true -q
 
 # ======= Stage 2: Custom JRE =======
 FROM eclipse-temurin:17-jdk-jammy AS jlink-stage

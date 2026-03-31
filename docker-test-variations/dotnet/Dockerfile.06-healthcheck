@@ -6,13 +6,13 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 WORKDIR /src
 
-COPY ./dotnetv3/SES/*.csproj ./SES/
+COPY ./dotnetv3/SES/Actions/SESActions.csproj ./SES/Actions/
 
-RUN cd SES && dotnet restore
+RUN cd SES && dotnet restore Actions/SESActions.csproj
 
 COPY ./dotnetv3/SES/ ./SES/
 
-RUN cd SES && dotnet publish -c Release -o /app/publish
+RUN cd SES && dotnet publish Actions/SESActions.csproj -c Release -o /app/publish
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
@@ -29,4 +29,4 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:80/health || exit 1
 
-ENTRYPOINT ["dotnet", "SESV2_Lambda_Example.dll"]
+ENTRYPOINT ["dotnet", "SESActions.dll"]

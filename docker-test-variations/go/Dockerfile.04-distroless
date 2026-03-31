@@ -10,7 +10,7 @@ WORKDIR /build
 COPY ./gov2/ .
 
 RUN cd dynamodb && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /dynamodb-app ./...
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /dynamodb-app ./cmd/
 
 # ---- Distroless ----
 FROM gcr.io/distroless/static-debian12
