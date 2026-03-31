@@ -1,32 +1,18 @@
 # syntax=docker/dockerfile:1
-# Variation 12: Layered JAR (Spring Boot exploded layers)
+# Variation 12: Layered JAR (simulated layers for non-Spring-Boot jar)
 # Complexity: HIGH
-# Uses Spring Boot's layered JAR feature for optimal Docker caching.
-# Dependencies layer rarely changes; application layer changes often.
-
 FROM maven:3.9-eclipse-temurin-17 AS builder
-
 WORKDIR /build
-
 COPY ./javav2/example_code/cloudwatch/ .
-
 RUN mvn package -Dmaven.test.skip -Dcheckstyle.skip=true -q
-
-# Extract Spring Boot layers
-RUN java -Djarmode=layertools -jar target/*.jar extract --destination /app/extracted 2>/dev/null || \
-    mkdir -p /app/extracted/dependencies /app/extracted/application && \
+# Separate deps from app jar for layer caching
+RUN mkdir -p /app/extracted/dependencies /app/extracted/application && \
+    mvn dependency:copy-dependencies -DoutputDirectory=/app/extracted/dependencies -q && \
     cp target/*.jar /app/extracted/application/app.jar
-
 # ---- Runtime ----
 FROM eclipse-temurin:17-jre-jammy
-
 WORKDIR /app
-
-COPY --from=builder /app/extracted/dependencies/    ./
-COPY --from=builder /app/extracted/spring-boot-loader/ ./ 2>/dev/null || true
-COPY --from=builder /app/extracted/snapshot-dependencies/ ./ 2>/dev/null || true
-COPY --from=builder /app/extracted/application/    ./
-
+COPY --from=builder /app/extracted/dependencies/ ./libs/
+COPY --from=builder /app/extracted/application/app.jar ./
 EXPOSE 8080
-
-ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+ENTRYPOINT ["java", "-cp", "app.jar:libs/*", "com.example.cloudwatch.CloudWatch"]
