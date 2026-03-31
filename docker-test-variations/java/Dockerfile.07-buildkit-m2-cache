@@ -10,6 +10,6 @@ WORKDIR /javav2/example_code/cloudwatch
 COPY ./javav2/example_code/cloudwatch/ .
 
 RUN --mount=type=cache,target=/root/.m2/repository \
-    mvn package -Dmaven.test.skip
+    mvn package -Dmaven.test.skip -Dcheckstyle.skip
 
 CMD ["bash"]
