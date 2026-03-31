@@ -7,10 +7,10 @@ COPY ./dotnetv3/SES/ ./SES/
 COPY ./dotnetv3/S3/ ./S3/
 COPY ./dotnetv3/IAM/ ./IAM/
 RUN dotnet restore ./SES/Actions/SESActions.csproj && \
-    dotnet restore ./S3/S3Actions/S3Actions.csproj && \
+    dotnet restore ./S3/Actions/S3Actions.csproj && \
     dotnet restore ./IAM/Actions/IAMActions.csproj
 RUN dotnet publish ./SES/Actions/SESActions.csproj -c Release -o /app/ses && \
-    dotnet publish ./S3/S3Actions/S3Actions.csproj  -c Release -o /app/s3  && \
+    dotnet publish ./S3/Actions/S3Actions.csproj  -c Release -o /app/s3  && \
     dotnet publish ./IAM/Actions/IAMActions.csproj -c Release -o /app/iam
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
