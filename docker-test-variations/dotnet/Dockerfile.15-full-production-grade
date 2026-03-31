@@ -1,55 +1,35 @@
 # syntax=docker/dockerfile:1
 # Variation 15: Full production-grade (all best-practices)
 # Complexity: HIGHEST
-# Multi-stage, NuGet BuildKit cache, non-root, HEALTHCHECK, LABEL,
-# self-contained publish, slim runtime-deps base.
-
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     NUGET_PACKAGES=/nuget-cache
-
 WORKDIR /src
-
-COPY ./dotnetv3/SES/*.csproj ./SES/
-
-RUN --mount=type=cache,target=/nuget-cache \
-    cd SES && dotnet restore
-
 COPY ./dotnetv3/SES/ ./SES/
-
 RUN --mount=type=cache,target=/nuget-cache \
-    cd SES && dotnet publish -c Release \
+    dotnet restore ./SES/
+RUN --mount=type=cache,target=/nuget-cache \
+    dotnet publish ./SES/ -c Release \
         --self-contained true \
         -r linux-x64 \
         -p:PublishSingleFile=true \
         -o /app/publish
-
 # ---- Final runtime ----
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0 AS final
-
 RUN groupadd -r dotnetgroup && useradd -r -g dotnetgroup -m dotnetuser \
     && apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
-
 COPY --from=build --chown=dotnetuser:dotnetgroup /app/publish .
-
 USER dotnetuser
-
 ENV ASPNETCORE_URLS=http://+:8080 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_ENVIRONMENT=Production
-
 EXPOSE 8080
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
-
 LABEL org.opencontainers.image.title="dotnetv3-aws-sdk-examples-prod" \
       org.opencontainers.image.version="8.0" \
       org.opencontainers.image.source="https://github.com/awsdocs/aws-doc-sdk-examples" \
       org.opencontainers.image.licenses="Apache-2.0"
-
 ENTRYPOINT ["./SESV2_Lambda_Example"]
