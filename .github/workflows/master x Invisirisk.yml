@@ -71,6 +71,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -135,6 +136,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -199,6 +201,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -263,6 +266,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -327,6 +331,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -391,6 +396,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
@@ -455,6 +461,7 @@ jobs:
         uses: invisirisk/pse-action@develop
         with:
           app_token: ${{secrets.IR_API_KEY}}
+          api_url: "https://app.stage.invisirisk.com"
           mode: docker-intercept
       # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v3
