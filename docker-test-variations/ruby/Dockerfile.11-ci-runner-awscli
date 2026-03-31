@@ -4,7 +4,7 @@
 # Bundles the Ruby SDK examples alongside the AWS CLI and common
 # CI tools so the image can be used directly as a GitHub Actions runner.
 
-FROM ruby:3.2-bookworm
+FROM ruby:3.1.2-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
