@@ -5,7 +5,7 @@
 # Child Dockerfiles only need: FROM ruby-aws-base:latest
 # The ONBUILD instructions fire automatically in children.
 
-FROM ruby:3.2-bookworm
+FROM ruby:3.1.2-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
