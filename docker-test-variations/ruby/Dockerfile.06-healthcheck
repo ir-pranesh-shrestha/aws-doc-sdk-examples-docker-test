@@ -4,7 +4,7 @@
 # Starts a minimal Rack/Sinatra app inside the container and uses
 # curl to health-check it on port 4567.
 
-FROM ruby:3.2-bookworm
+FROM ruby:3.1.2-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
