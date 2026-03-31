@@ -4,7 +4,7 @@
 # Designed for local development; installs gems globally so a mounted
 # volume at /ruby sees them immediately.
 
-FROM ruby:3.1.2-bookworm
+FROM ruby:3.2-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
