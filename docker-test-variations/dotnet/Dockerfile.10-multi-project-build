@@ -1,7 +1,21 @@
 # syntax=docker/dockerfile:1
+# Variation 10: Multi-project build (several services)
+# Complexity: HIGH
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ./dotnetv3/SES/ ./SES/
 COPY ./dotnetv3/S3/ ./S3/
 COPY ./dotnetv3/IAM/ ./IAM/
-RUN echo "=S3=" && find ./S3 -name "*.csproj" && echo "=IAM=" && find ./IAM -name "*.csproj"
+RUN dotnet restore ./SES/Actions/SESActions.csproj && \
+    dotnet restore ./S3/S3_Basics/S3_BasicsScenario.csproj && \
+    dotnet restore ./IAM/IAM_Basics_Scenario/IAM_Basics_Scenario/IAM_Basics_Scenario.csproj
+RUN dotnet publish ./SES/Actions/SESActions.csproj -c Release -o /app/ses && \
+    dotnet publish ./S3/S3_Basics/S3_BasicsScenario.csproj -c Release -o /app/s3 && \
+    dotnet publish ./IAM/IAM_Basics_Scenario/IAM_Basics_Scenario/IAM_Basics_Scenario.csproj -c Release -o /app/iam
+# ---- Runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app/ses ./ses
+COPY --from=build /app/s3  ./s3
+COPY --from=build /app/iam ./iam
+CMD ["bash"]
