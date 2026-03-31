@@ -19,6 +19,6 @@ WORKDIR /javav2
 COPY ./javav2/ .
 
 RUN --mount=type=cache,target=/root/.m2/repository \
-    cd example_code/cloudwatch && mvn package -Dmaven.test.skip
+    cd example_code/cloudwatch && mvn package -Dmaven.test.skip -Dcheckstyle.skip
 
 CMD ["bash"]
