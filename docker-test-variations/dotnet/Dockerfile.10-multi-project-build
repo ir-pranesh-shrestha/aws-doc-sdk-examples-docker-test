@@ -6,6 +6,7 @@ WORKDIR /src
 COPY ./dotnetv3/SES/ ./SES/
 COPY ./dotnetv3/S3/ ./S3/
 COPY ./dotnetv3/IAM/ ./IAM/
+RUN find ./S3 -name "*.csproj" && find ./IAM -name "*.csproj"
 RUN dotnet restore ./SES/Actions/SESActions.csproj && \
     dotnet restore ./S3/Actions/S3Actions.csproj && \
     dotnet restore ./IAM/Actions/IAMActions.csproj
