@@ -4,7 +4,7 @@
 # Creates a dedicated non-root system user and group,
 # installs gems under that user's home, and drops privileges.
 
-FROM ruby:3.2-bookworm
+FROM ruby:3.1.2-bullseye
 
 RUN groupadd -r rubygroup && useradd -r -g rubygroup -m -d /home/rubyuser rubyuser
 
