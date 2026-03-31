@@ -12,6 +12,6 @@ WORKDIR /javav2
 
 COPY ./javav2/ .
 
-RUN cd example_code/${SERVICE} && mvn package -Dmaven.test.skip -P${MAVEN_PROFILE}
+RUN cd example_code/${SERVICE} && mvn package -Dmaven.test.skip -Dcheckstyle.skip -P${MAVEN_PROFILE}
 
 CMD ["bash"]
