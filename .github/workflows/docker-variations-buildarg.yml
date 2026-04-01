@@ -1,0 +1,224 @@
+name: Docker Variation Tests - Build-Arg Injection Matrix (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests each language's ARG-supporting Dockerfile with multiple --build-arg
+# combinations.  Space-separated KEY=VALUE pairs in matrix.build_args are
+# converted to individual --build-arg flags via a shell loop.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────────────────────────────────────────────
+  # RUBY  (Dockerfile.05-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  ruby_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "RUBY_ENV=production"
+          - label: test
+            build_args: "RUBY_ENV=test"
+          - label: dev
+            build_args: "RUBY_ENV=development"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t ruby-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/ruby/Dockerfile.05-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PYTHON  (Dockerfile.06-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  python_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "SERVICE=dynamodb PYTHON_ENV=production"
+          - label: test
+            build_args: "SERVICE=s3 PYTHON_ENV=development"
+          - label: dev
+            build_args: "SERVICE=sns PYTHON_ENV=development"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t python-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/python/Dockerfile.06-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVASCRIPT  (Dockerfile.06-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  javascript_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "NODE_ENV=production"
+          - label: dev
+            build_args: "NODE_ENV=development"
+          - label: test
+            build_args: "NODE_ENV=test"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t javascript-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/javascript/Dockerfile.06-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # GO  (Dockerfile.06-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  go_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: dynamo
+            build_args: "TARGET_PKG=dynamodb"
+          - label: s3
+            build_args: "TARGET_PKG=s3"
+          - label: iam
+            build_args: "TARGET_PKG=iam"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t go-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/go/Dockerfile.06-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # .NET  (Dockerfile.05-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  dotnet_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: release
+            build_args: "BUILD_CONFIG=Release"
+          - label: debug
+            build_args: "BUILD_CONFIG=Debug"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t dotnet-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.05-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVA  (Dockerfile.05-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  java_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: default
+            build_args: "MAVEN_PROFILE=default SERVICE=cloudwatch"
+          - label: s3
+            build_args: "MAVEN_PROFILE=default SERVICE=s3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t java-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/java/Dockerfile.05-arg-env-config \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PHP  (Dockerfile.06-arg-env-config)
+  # ──────────────────────────────────────────────────────
+  php_buildarg:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "PHP_ENV=production SERVICE=glue"
+          - label: dev
+            build_args: "PHP_ENV=development SERVICE=glue"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t php-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/php/Dockerfile.06-arg-env-config \
+            .

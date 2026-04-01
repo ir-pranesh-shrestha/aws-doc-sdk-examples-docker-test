@@ -1,0 +1,230 @@
+name: Docker Variation Tests - BuildKit + Non-Root (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Explicitly enables BuildKit via DOCKER_BUILDKIT=1 at job level.
+# Each language tests the non-root, BuildKit cache-mount, combined, and
+# full-production variations, with a feature label in each step name.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────────────────────────────────────────────
+  # RUBY
+  # ──────────────────────────────────────────────────────
+  ruby_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "09-layer-cache-optimised"
+            feature: "buildkit-layer-cache"
+          - variation: "10-multi-stage-nonroot-healthcheck"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t ruby-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PYTHON
+  # ──────────────────────────────────────────────────────
+  python_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "09-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "12-multi-stage-venv-nonroot"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t python-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVASCRIPT
+  # ──────────────────────────────────────────────────────
+  javascript_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "09-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t javascript-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # GO
+  # ──────────────────────────────────────────────────────
+  go_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "14-nonroot-readonly-fs"
+            feature: "nonroot-readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t go-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # .NET
+  # ──────────────────────────────────────────────────────
+  dotnet_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-nuget-cache"
+            feature: "buildkit-nuget-cache"
+          - variation: "14-nonroot-readonly-fs"
+            feature: "nonroot-readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t dotnet-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVA
+  # ──────────────────────────────────────────────────────
+  java_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "07-buildkit-m2-cache"
+            feature: "buildkit-m2-cache"
+          - variation: "14-jvm-tuned-nonroot"
+            feature: "jvm-tuned-nonroot"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t java-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PHP
+  # ──────────────────────────────────────────────────────
+  php_buildkit_nonroot:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-composer-cache"
+            feature: "buildkit-composer-cache"
+          - variation: "14-readonly-filesystem"
+            feature: "readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t php-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
+            .

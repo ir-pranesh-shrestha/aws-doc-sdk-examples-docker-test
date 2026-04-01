@@ -1,0 +1,28 @@
+name: Docker Variation Tests - PHP (Multi-OS Runner Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_php_multi_os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "02-phpfpm-nginx"
+          - "07-healthcheck"
+          - "12-multi-stage-nonroot-healthcheck"
+          - "15-full-production-grade"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t php-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
+            .

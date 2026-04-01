@@ -1,0 +1,33 @@
+name: Docker Variation Tests - Ruby (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ruby_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Ruby | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t ruby-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Ruby | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm ruby-smoke-${{ matrix.variation }} ruby --version
+      - name: "Ruby | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi ruby-smoke-${{ matrix.variation }} || true

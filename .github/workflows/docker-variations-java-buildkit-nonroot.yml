@@ -1,0 +1,31 @@
+name: Docker Variation Tests - Java (BuildKit + Non-Root)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_java_buildkit_nonroot:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "07-buildkit-m2-cache"
+            feature: "buildkit-m2-cache"
+          - variation: "14-jvm-tuned-nonroot"
+            feature: "jvm-tuned-nonroot"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Java | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t java-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .

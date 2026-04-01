@@ -1,0 +1,31 @@
+name: Docker Variation Tests - Ruby (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ruby_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "RUBY_ENV=production"
+          - label: test
+            build_args: "RUBY_ENV=test"
+          - label: dev
+            build_args: "RUBY_ENV=development"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t ruby-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/ruby/Dockerfile.05-arg-env-config \
+            .

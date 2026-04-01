@@ -1,0 +1,31 @@
+name: Docker Variation Tests - Python (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_python_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "SERVICE=dynamodb PYTHON_ENV=production"
+          - label: test
+            build_args: "SERVICE=s3 PYTHON_ENV=development"
+          - label: dev
+            build_args: "SERVICE=sns PYTHON_ENV=development"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Python | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t python-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/python/Dockerfile.06-arg-env-config \
+            .

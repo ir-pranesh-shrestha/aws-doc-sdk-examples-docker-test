@@ -1,0 +1,33 @@
+name: Docker Variation Tests - .NET (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_dotnet_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-dev-watch"
+            complexity: "MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: ".NET | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t dotnet-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: ".NET | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm dotnet-smoke-${{ matrix.variation }} dotnet --info
+      - name: ".NET | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi dotnet-smoke-${{ matrix.variation }} || true

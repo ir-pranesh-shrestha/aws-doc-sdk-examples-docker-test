@@ -1,0 +1,61 @@
+name: Docker Variation Tests - Java (Build Time Benchmark)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_java_benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "03-maven-dep-cache"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "08-jlink-custom-jre"
+            complexity: "HIGH"
+          - variation: "09-graalvm-native"
+            complexity: "HIGHEST"
+          - variation: "10-dev-debug-port"
+            complexity: "MEDIUM"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-layered-jar"
+            complexity: "HIGH"
+          - variation: "13-gradle-build"
+            complexity: "MEDIUM"
+          - variation: "14-jvm-tuned-nonroot"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Initialize benchmark summary
+        run: |
+          echo "## Java Build Time Benchmark — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build \
+            -t java-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,61 @@
+name: Docker Variation Tests - Ruby (Build Time Benchmark)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ruby_benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-multi-stage"
+            complexity: "LOW-MEDIUM"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-alpine-minimal"
+            complexity: "MEDIUM"
+          - variation: "08-pinned-digest"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "10-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-buildkit-secret"
+            complexity: "HIGH"
+          - variation: "13-onbuild-base"
+            complexity: "MEDIUM"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Initialize benchmark summary
+        run: |
+          echo "## Ruby Build Time Benchmark — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build \
+            -t ruby-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY

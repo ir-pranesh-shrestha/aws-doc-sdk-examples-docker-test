@@ -1,0 +1,242 @@
+name: Docker Variation Tests - Smoke Test Build→Run→Verify→Cleanup (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Full smoke-test cycle: build → run (verify runtime) → cleanup.
+# Only single-stage and slim variations with a predictable runtime are included
+# to avoid long compile times.  Shorter buildkit/scratch variations are skipped.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────────────────────────────────────────────
+  # RUBY
+  # ──────────────────────────────────────────────────────
+  ruby_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t ruby-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Ruby | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm ruby-smoke-${{ matrix.variation }} ruby --version
+      - name: "Ruby | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi ruby-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # PYTHON
+  # ──────────────────────────────────────────────────────
+  python_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t python-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Python | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm python-smoke-${{ matrix.variation }} python --version
+      - name: "Python | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi python-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # JAVASCRIPT
+  # ──────────────────────────────────────────────────────
+  javascript_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t javascript-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "JavaScript | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm javascript-smoke-${{ matrix.variation }} node --version
+      - name: "JavaScript | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi javascript-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # GO
+  # ──────────────────────────────────────────────────────
+  go_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-dev-with-tests"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t go-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Go | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm go-smoke-${{ matrix.variation }} bash -c "echo 'smoke ok'"
+      - name: "Go | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi go-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # .NET
+  # ──────────────────────────────────────────────────────
+  dotnet_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-dev-watch"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t dotnet-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: ".NET | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm dotnet-smoke-${{ matrix.variation }} dotnet --info
+      - name: ".NET | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi dotnet-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # JAVA
+  # ──────────────────────────────────────────────────────
+  java_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "10-dev-debug-port"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t java-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Java | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm java-smoke-${{ matrix.variation }} java -version
+      - name: "Java | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi java-smoke-${{ matrix.variation }} || true
+
+  # ──────────────────────────────────────────────────────
+  # PHP
+  # ──────────────────────────────────────────────────────
+  php_smoke_test:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "03-alpine-php-cli"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-dev-xdebug"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t php-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "PHP | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm php-smoke-${{ matrix.variation }} php --version
+      - name: "PHP | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi php-smoke-${{ matrix.variation }} || true

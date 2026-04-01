@@ -1,0 +1,90 @@
+name: Docker Variation Tests - Go (Cache Strategy Comparison)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  go_cold:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Go (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          echo "## Go Cold Build — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Strategy | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|----------|" >> $GITHUB_STEP_SUMMARY
+          START=$(date +%s)
+          docker build --no-cache \
+            -t go-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $((END-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  go_layer:
+    runs-on: ubuntu-latest
+    needs: go_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Go (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          echo "## Go Layer-Cache Build — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Strategy | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|----------|" >> $GITHUB_STEP_SUMMARY
+          START=$(date +%s)
+          docker build \
+            -t go-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $((END-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  go_gha:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Go (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/go/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: go-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

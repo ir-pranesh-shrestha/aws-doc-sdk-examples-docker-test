@@ -1,0 +1,33 @@
+name: Docker Variation Tests - Python (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_python_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Python | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t python-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Python | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm python-smoke-${{ matrix.variation }} python --version
+      - name: "Python | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi python-smoke-${{ matrix.variation }} || true

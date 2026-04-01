@@ -1,0 +1,31 @@
+name: Docker Variation Tests - PHP (BuildKit + Non-Root)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_php_buildkit_nonroot:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-composer-cache"
+            feature: "buildkit-composer-cache"
+          - variation: "14-readonly-filesystem"
+            feature: "readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t php-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
+            .

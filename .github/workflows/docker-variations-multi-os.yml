@@ -1,0 +1,209 @@
+name: Docker Variation Tests - Multi-OS Runner Matrix (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Each language job runs 5 Dockerfile variations across 3 Ubuntu runner versions
+# (cross-product of os × variation).  fail-fast: false so one failure does not
+# cancel the rest of the matrix.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────────────────────────────────────────────
+  # RUBY  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  ruby_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "02-multi-stage"
+          - "06-healthcheck"
+          - "10-multi-stage-nonroot-healthcheck"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t ruby-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PYTHON  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  python_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "04-multi-stage-wheel-builder"
+          - "07-healthcheck"
+          - "12-multi-stage-venv-nonroot"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t python-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVASCRIPT  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  javascript_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "04-multi-stage"
+          - "07-healthcheck"
+          - "12-multi-stage-nonroot-healthcheck"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t javascript-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # GO  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  go_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "02-multi-stage-alpine"
+          - "07-healthcheck"
+          - "09-dev-with-tests"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t go-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # .NET  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  dotnet_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "02-multi-stage-aspnet"
+          - "06-healthcheck"
+          - "10-multi-project-build"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t dotnet-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # JAVA  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  java_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-maven"
+          - "02-multi-stage-jre"
+          - "06-healthcheck"
+          - "12-layered-jar"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t java-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .
+
+  # ──────────────────────────────────────────────────────
+  # PHP  (5 variations × 3 OS = 15 combinations)
+  # ──────────────────────────────────────────────────────
+  php_multi_os:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+        variation:
+          - "01-simple-single-stage"
+          - "02-phpfpm-nginx"
+          - "07-healthcheck"
+          - "12-multi-stage-nonroot-healthcheck"
+          - "15-full-production-grade"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [os=${{ matrix.os }}]"
+        run: |
+          OS_TAG=$(echo "${{ matrix.os }}" | tr '.' '-')
+          docker build \
+            -t php-${OS_TAG}-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
+            .

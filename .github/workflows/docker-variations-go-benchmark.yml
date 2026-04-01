@@ -1,0 +1,61 @@
+name: Docker Variation Tests - Go (Build Time Benchmark)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_go_benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-multi-stage-alpine"
+            complexity: "MEDIUM"
+          - variation: "03-scratch-static"
+            complexity: "HIGH"
+          - variation: "04-distroless"
+            complexity: "HIGH"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "09-dev-with-tests"
+            complexity: "MEDIUM"
+          - variation: "10-cross-compile-arm64"
+            complexity: "MEDIUM-HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-service-build"
+            complexity: "HIGH"
+          - variation: "13-pinned-toolchain"
+            complexity: "LOW-MEDIUM"
+          - variation: "14-nonroot-readonly-fs"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Initialize benchmark summary
+        run: |
+          echo "## Go Build Time Benchmark — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+      - name: "Go | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build \
+            -t go-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY

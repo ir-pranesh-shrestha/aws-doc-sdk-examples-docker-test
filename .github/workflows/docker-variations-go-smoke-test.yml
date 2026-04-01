@@ -1,0 +1,31 @@
+name: Docker Variation Tests - Go (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_go_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-dev-with-tests"
+            complexity: "MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Go | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t go-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Go | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm go-smoke-${{ matrix.variation }} bash -c "echo 'smoke ok'"
+      - name: "Go | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi go-smoke-${{ matrix.variation }} || true

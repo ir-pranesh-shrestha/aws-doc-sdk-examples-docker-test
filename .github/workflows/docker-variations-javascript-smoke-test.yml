@@ -1,0 +1,33 @@
+name: Docker Variation Tests - JavaScript (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_javascript_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "JavaScript | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t javascript-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "JavaScript | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm javascript-smoke-${{ matrix.variation }} node --version
+      - name: "JavaScript | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi javascript-smoke-${{ matrix.variation }} || true

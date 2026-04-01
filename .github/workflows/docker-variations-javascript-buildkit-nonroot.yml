@@ -1,0 +1,31 @@
+name: Docker Variation Tests - JavaScript (BuildKit + Non-Root)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_javascript_buildkit_nonroot:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "09-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t javascript-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            .

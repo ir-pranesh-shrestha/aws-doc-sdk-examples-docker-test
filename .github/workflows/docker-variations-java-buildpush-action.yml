@@ -1,0 +1,37 @@
+name: Docker Variation Tests - Java (Build-Push Action)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_java_buildpush_action:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/java/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: java-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

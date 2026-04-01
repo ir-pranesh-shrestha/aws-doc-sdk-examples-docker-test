@@ -1,0 +1,61 @@
+name: Docker Variation Tests - Python (Build Time Benchmark)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_python_benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "03-alpine-minimal"
+            complexity: "MEDIUM"
+          - variation: "04-multi-stage-wheel-builder"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-virtualenv"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "10-dev-with-tests"
+            complexity: "MEDIUM"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-stage-venv-nonroot"
+            complexity: "HIGH"
+          - variation: "13-labels-entrypoint"
+            complexity: "LOW-MEDIUM"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Initialize benchmark summary
+        run: |
+          echo "## Python Build Time Benchmark — ${{ matrix.variation }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Variation | Complexity | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+      - name: "Python | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build \
+            -t python-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            .
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY

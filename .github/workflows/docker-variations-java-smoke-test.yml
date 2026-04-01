@@ -1,0 +1,33 @@
+name: Docker Variation Tests - Java (Smoke Test Build→Run→Verify→Cleanup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_java_smoke_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "10-dev-debug-port"
+            complexity: "MEDIUM"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Java | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build \
+            -t java-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
+            .
+      - name: "Java | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm java-smoke-${{ matrix.variation }} java -version
+      - name: "Java | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi java-smoke-${{ matrix.variation }} || true

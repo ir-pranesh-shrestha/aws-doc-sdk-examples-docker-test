@@ -1,0 +1,29 @@
+name: Docker Variation Tests - PHP (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_php_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "PHP_ENV=production SERVICE=glue"
+          - label: dev
+            build_args: "PHP_ENV=development SERVICE=glue"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t php-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/php/Dockerfile.06-arg-env-config \
+            .

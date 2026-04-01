@@ -1,0 +1,29 @@
+name: Docker Variation Tests - .NET (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_dotnet_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: release
+            build_args: "BUILD_CONFIG=Release"
+          - label: debug
+            build_args: "BUILD_CONFIG=Debug"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t dotnet-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.05-arg-env-config \
+            .

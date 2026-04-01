@@ -1,0 +1,33 @@
+name: Docker Variation Tests - JavaScript (Multi-Platform linux/amd64 + linux/arm64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_javascript_multiplatform:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: javascript-multiplatform-${{ matrix.variation }}:latest

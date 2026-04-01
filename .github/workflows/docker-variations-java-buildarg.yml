@@ -1,0 +1,29 @@
+name: Docker Variation Tests - Java (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_java_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: default
+            build_args: "MAVEN_PROFILE=default SERVICE=cloudwatch"
+          - label: s3
+            build_args: "MAVEN_PROFILE=default SERVICE=s3"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "Java | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t java-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/java/Dockerfile.05-arg-env-config \
+            .

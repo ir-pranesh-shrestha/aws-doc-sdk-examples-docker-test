@@ -1,0 +1,272 @@
+name: Docker Variation Tests - Build-Push Action (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Uses docker/setup-buildx-action@v3 + docker/build-push-action@v5 with
+# GitHub Actions cache (cache-from/cache-to type=gha).  push: false, load: true
+# keeps images local — no registry credentials needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ──────────────────────────────────────────────────────
+  # RUBY
+  # ──────────────────────────────────────────────────────
+  ruby_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage"
+            complexity: "LOW-MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: ruby-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # PYTHON
+  # ──────────────────────────────────────────────────────
+  python_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Python | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/python/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: python-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # JAVASCRIPT
+  # ──────────────────────────────────────────────────────
+  javascript_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: javascript-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # GO
+  # ──────────────────────────────────────────────────────
+  go_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-alpine"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Go | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/go/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: go-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # .NET
+  # ──────────────────────────────────────────────────────
+  dotnet_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-aspnet"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: dotnet-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # JAVA
+  # ──────────────────────────────────────────────────────
+  java_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/java/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: java-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────
+  # PHP
+  # ──────────────────────────────────────────────────────
+  php_buildpush_action:
+    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-phpfpm-nginx"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/php/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: php-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

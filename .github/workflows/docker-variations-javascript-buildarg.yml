@@ -1,0 +1,31 @@
+name: Docker Variation Tests - JavaScript (Build-Arg Injection Matrix)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_javascript_buildarg:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "NODE_ENV=production"
+          - label: dev
+            build_args: "NODE_ENV=development"
+          - label: test
+            build_args: "NODE_ENV=test"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t javascript-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/javascript/Dockerfile.06-arg-env-config \
+            .
