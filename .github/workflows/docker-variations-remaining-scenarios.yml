@@ -1,0 +1,2211 @@
+name: Docker Variation Tests - All Remaining Scenarios (Master)
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Scenario to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - buildkit-nonroot
+          - buildpush-action
+          - buildarg
+          - multiplatform
+          - trivy-scan
+          - smoke-test
+          - cache-strategy
+          - benchmark
+      language:
+        description: "Language to test"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ruby
+          - python
+          - javascript
+          - go
+          - dotnet
+          - java
+          - php
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Scenarios covered:
+#   buildkit-nonroot  — DOCKER_BUILDKIT=1, non-root + cache-mount variations
+#   buildpush-action  — docker/build-push-action@v5 with GHA cache
+#   buildarg          — --build-arg injection matrix
+#   multiplatform     — linux/amd64 + linux/arm64 via QEMU + Buildx
+#   trivy-scan        — build → Trivy CVE scan (non-blocking, CRITICAL/HIGH)
+#   smoke-test        — build → docker run verify → cleanup
+#   cache-strategy    — cold vs layer-cache vs GHA-cache (3 sequential jobs)
+#   benchmark         — all 15 variations timed → $GITHUB_STEP_SUMMARY
+# ═════════════════════════════════════════════════════════════════════════════
+
+jobs:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 2 — BuildKit + Non-Root
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s2_ruby_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "09-layer-cache-optimised"
+            feature: "buildkit-layer-cache"
+          - variation: "10-multi-stage-nonroot-healthcheck"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t ruby-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} .
+
+  s2_python_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "09-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "12-multi-stage-venv-nonroot"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t python-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+
+  s2_javascript_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "09-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            feature: "combined"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t javascript-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+
+  s2_go_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-cache-mount"
+            feature: "buildkit-cache"
+          - variation: "14-nonroot-readonly-fs"
+            feature: "nonroot-readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t go-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+
+  s2_dotnet_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-nuget-cache"
+            feature: "buildkit-nuget-cache"
+          - variation: "14-nonroot-readonly-fs"
+            feature: "nonroot-readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t dotnet-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+
+  s2_java_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "04-non-root-user"
+            feature: "nonroot"
+          - variation: "07-buildkit-m2-cache"
+            feature: "buildkit-m2-cache"
+          - variation: "14-jvm-tuned-nonroot"
+            feature: "jvm-tuned-nonroot"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t java-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+
+  s2_php_buildkit_nonroot:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildkit-nonroot') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "05-non-root-user"
+            feature: "nonroot"
+          - variation: "08-buildkit-composer-cache"
+            feature: "buildkit-composer-cache"
+          - variation: "14-readonly-filesystem"
+            feature: "readonly"
+          - variation: "15-full-production-grade"
+            feature: "production"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [feature=${{ matrix.feature }}]"
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -t php-buildkit-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 3 — docker/build-push-action (GHA cache, push: false)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s3_ruby_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage"
+            complexity: "LOW-MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: ruby-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_python_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Python | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/python/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: python-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_javascript_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: javascript-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_go_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-alpine"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Go | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/go/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: go-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_dotnet_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-aspnet"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: dotnet-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_java_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/java/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: java-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s3_php_buildpush_action:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildpush-action') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-phpfpm-nginx"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/php/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: php-action-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 4 — Build-Arg Injection Matrix
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s4_ruby_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "RUBY_ENV=production"
+          - label: test
+            build_args: "RUBY_ENV=test"
+          - label: dev
+            build_args: "RUBY_ENV=development"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t ruby-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/ruby/Dockerfile.05-arg-env-config .
+
+  s4_python_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "SERVICE=dynamodb PYTHON_ENV=production"
+          - label: test
+            build_args: "SERVICE=s3 PYTHON_ENV=development"
+          - label: dev
+            build_args: "SERVICE=sns PYTHON_ENV=development"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t python-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/python/Dockerfile.06-arg-env-config .
+
+  s4_javascript_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "NODE_ENV=production"
+          - label: dev
+            build_args: "NODE_ENV=development"
+          - label: test
+            build_args: "NODE_ENV=test"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t javascript-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/javascript/Dockerfile.06-arg-env-config .
+
+  s4_go_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: dynamo
+            build_args: "TARGET_PKG=dynamodb"
+          - label: s3
+            build_args: "TARGET_PKG=s3"
+          - label: iam
+            build_args: "TARGET_PKG=iam"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t go-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/go/Dockerfile.06-arg-env-config .
+
+  s4_dotnet_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: release
+            build_args: "BUILD_CONFIG=Release"
+          - label: debug
+            build_args: "BUILD_CONFIG=Debug"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t dotnet-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.05-arg-env-config .
+
+  s4_java_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: default
+            build_args: "MAVEN_PROFILE=default SERVICE=cloudwatch"
+          - label: s3
+            build_args: "MAVEN_PROFILE=default SERVICE=s3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.05-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t java-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/java/Dockerfile.05-arg-env-config .
+
+  s4_php_buildarg:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'buildarg') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prod
+            build_args: "PHP_ENV=production SERVICE=glue"
+          - label: dev
+            build_args: "PHP_ENV=development SERVICE=glue"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.06-arg-env-config [args=${{ matrix.label }}]"
+        run: |
+          BUILD_ARG_FLAGS=""
+          for arg in ${{ matrix.build_args }}; do
+            BUILD_ARG_FLAGS="${BUILD_ARG_FLAGS} --build-arg ${arg}"
+          done
+          docker build ${BUILD_ARG_FLAGS} \
+            -t php-buildarg-${{ matrix.label }} \
+            -f ./docker-test-variations/php/Dockerfile.06-arg-env-config .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 5 — Multi-Platform (linux/amd64 + linux/arm64)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s5_ruby_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-alpine-minimal"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ruby-multiplatform-${{ matrix.variation }}:latest
+
+  s5_python_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "Python | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/python/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: python-multiplatform-${{ matrix.variation }}:latest
+
+  s5_javascript_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: javascript-multiplatform-${{ matrix.variation }}:latest
+
+  s5_go_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-alpine"
+            complexity: "MEDIUM"
+          - variation: "04-distroless"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "Go | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/go/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: go-multiplatform-${{ matrix.variation }}:latest
+
+  s5_dotnet_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-aspnet"
+            complexity: "MEDIUM"
+          - variation: "07-self-contained-singlefile"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: dotnet-multiplatform-${{ matrix.variation }}:latest
+
+  s5_java_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "08-jlink-custom-jre"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "Java | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/java/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: java-multiplatform-${{ matrix.variation }}:latest
+
+  s5_php_multiplatform:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'multiplatform') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "03-alpine-php-cli"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [platforms=amd64+arm64, complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/php/Dockerfile.${{ matrix.variation }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: php-multiplatform-${{ matrix.variation }}:latest
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 6 — Trivy CVE Security Scan Gate
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s6_ruby_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "10-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t ruby-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} .
+      - name: "Ruby | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ruby-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_python_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "12-multi-stage-venv-nonroot"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t python-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+      - name: "Python | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: python-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_javascript_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t javascript-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+      - name: "JavaScript | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: javascript-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_go_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "04-distroless"
+            complexity: "HIGH"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t go-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+      - name: "Go | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: go-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_dotnet_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "07-self-contained-singlefile"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t dotnet-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+      - name: ".NET | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: dotnet-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_java_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "12-layered-jar"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t java-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+      - name: "Java | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: java-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+  s6_php_trivy_scan:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'trivy-scan') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t php-scan-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+      - name: "PHP | Trivy scan Dockerfile.${{ matrix.variation }}"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: php-scan-${{ matrix.variation }}
+          format: table
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - run: echo "Scan complete for ${{ matrix.variation }}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 7 — Smoke Test (build → run verify → cleanup)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s7_ruby_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t ruby-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} .
+      - name: "Ruby | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm ruby-smoke-${{ matrix.variation }} ruby --version
+      - name: "Ruby | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi ruby-smoke-${{ matrix.variation }} || true
+
+  s7_python_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t python-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+      - name: "Python | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm python-smoke-${{ matrix.variation }} python --version
+      - name: "Python | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi python-smoke-${{ matrix.variation }} || true
+
+  s7_javascript_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t javascript-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+      - name: "JavaScript | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm javascript-smoke-${{ matrix.variation }} node --version
+      - name: "JavaScript | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi javascript-smoke-${{ matrix.variation }} || true
+
+  s7_go_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-dev-with-tests"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t go-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+      - name: "Go | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm go-smoke-${{ matrix.variation }} bash -c "echo 'smoke ok'"
+      - name: "Go | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi go-smoke-${{ matrix.variation }} || true
+
+  s7_dotnet_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "09-dev-watch"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t dotnet-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+      - name: ".NET | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm dotnet-smoke-${{ matrix.variation }} dotnet --info
+      - name: ".NET | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi dotnet-smoke-${{ matrix.variation }} || true
+
+  s7_java_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "10-dev-debug-port"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t java-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+      - name: "Java | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm java-smoke-${{ matrix.variation }} java -version
+      - name: "Java | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi java-smoke-${{ matrix.variation }} || true
+
+  s7_php_smoke_test:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'smoke-test') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "03-alpine-php-cli"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-dev-xdebug"
+            complexity: "MEDIUM"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Build Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          docker build -t php-smoke-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+      - name: "PHP | Run & verify Dockerfile.${{ matrix.variation }}"
+        run: docker run --rm php-smoke-${{ matrix.variation }} php --version
+      - name: "PHP | Cleanup Dockerfile.${{ matrix.variation }}"
+        run: docker rmi php-smoke-${{ matrix.variation }} || true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 8 — Cache Strategy Comparison (cold → layer → gha, sequential)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s8_ruby_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(START=$(date +%s); docker build --no-cache -t ruby-cold-${{ matrix.variation }} -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} . ; echo $(($(date +%s)-START))s)" >> $GITHUB_STEP_SUMMARY
+
+  s8_ruby_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    needs: s8_ruby_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t ruby-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_ruby_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Ruby (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: ruby-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_python_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t python-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_python_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    needs: s8_python_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t python-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_python_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Python (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/python/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: python-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_javascript_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t javascript-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_javascript_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    needs: s8_javascript_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t javascript-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_javascript_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "JavaScript (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: javascript-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_go_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t go-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_go_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    needs: s8_go_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t go-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_go_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Go (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/go/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: go-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_dotnet_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t dotnet-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_dotnet_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    needs: s8_dotnet_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t dotnet-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_dotnet_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: ".NET (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: dotnet-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_java_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t java-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_java_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    needs: s8_java_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t java-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_java_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "Java (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/java/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: java-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  s8_php_cold:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP (cold) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build --no-cache -t php-cold-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | cold | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_php_layer:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    needs: s8_php_cold
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP (layer-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t php-layer-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+          echo "| ${{ matrix.variation }} | ${{ matrix.complexity }} | layer | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s8_php_gha:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'cache-strategy') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: "PHP (gha-cache) | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker-test-variations/php/Dockerfile.${{ matrix.variation }}
+          push: false
+          load: true
+          tags: php-gha-${{ matrix.variation }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO 9 — Build Time Benchmark (all 15 variations, timed → step summary)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  s9_ruby_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-multi-stage"
+            complexity: "LOW-MEDIUM"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-alpine-minimal"
+            complexity: "MEDIUM"
+          - variation: "08-pinned-digest"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-layer-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "10-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-buildkit-secret"
+            complexity: "HIGH"
+          - variation: "13-onbuild-base"
+            complexity: "MEDIUM"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Ruby | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t ruby-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} .
+          echo "| Ruby | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_python_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'python')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-slim-base"
+            complexity: "LOW"
+          - variation: "03-alpine-minimal"
+            complexity: "MEDIUM"
+          - variation: "04-multi-stage-wheel-builder"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-virtualenv"
+            complexity: "MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "10-dev-with-tests"
+            complexity: "MEDIUM"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-stage-venv-nonroot"
+            complexity: "HIGH"
+          - variation: "13-labels-entrypoint"
+            complexity: "LOW-MEDIUM"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Python | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t python-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} .
+          echo "| Python | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_javascript_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-alpine-minimal"
+            complexity: "LOW-MEDIUM"
+          - variation: "03-dev-hot-reload"
+            complexity: "LOW"
+          - variation: "04-multi-stage"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-layer-cache-optimised"
+            complexity: "LOW-MEDIUM"
+          - variation: "09-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "10-monorepo-lerna"
+            complexity: "HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "13-typescript-build"
+            complexity: "HIGH"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "JavaScript | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t javascript-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} .
+          echo "| JavaScript | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_go_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'go')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-multi-stage-alpine"
+            complexity: "MEDIUM"
+          - variation: "03-scratch-static"
+            complexity: "HIGH"
+          - variation: "04-distroless"
+            complexity: "HIGH"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-cache-mount"
+            complexity: "MEDIUM-HIGH"
+          - variation: "09-dev-with-tests"
+            complexity: "MEDIUM"
+          - variation: "10-cross-compile-arm64"
+            complexity: "MEDIUM-HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-service-build"
+            complexity: "HIGH"
+          - variation: "13-pinned-toolchain"
+            complexity: "LOW-MEDIUM"
+          - variation: "14-nonroot-readonly-fs"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Go | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t go-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} .
+          echo "| Go | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_dotnet_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-multi-stage-aspnet"
+            complexity: "MEDIUM"
+          - variation: "03-nuget-cache-optimised"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-self-contained-singlefile"
+            complexity: "HIGH"
+          - variation: "08-buildkit-nuget-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "09-dev-watch"
+            complexity: "MEDIUM"
+          - variation: "10-multi-project-build"
+            complexity: "HIGH"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-test-gate-stage"
+            complexity: "HIGH"
+          - variation: "13-aot-native"
+            complexity: "HIGH"
+          - variation: "14-nonroot-readonly-fs"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: ".NET | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t dotnet-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} .
+          echo "| .NET | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_java_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'java')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-maven"
+            complexity: "LOW"
+          - variation: "02-multi-stage-jre"
+            complexity: "MEDIUM"
+          - variation: "03-maven-dep-cache"
+            complexity: "MEDIUM"
+          - variation: "04-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "05-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "06-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "07-buildkit-m2-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "08-jlink-custom-jre"
+            complexity: "HIGH"
+          - variation: "09-graalvm-native"
+            complexity: "HIGHEST"
+          - variation: "10-dev-debug-port"
+            complexity: "MEDIUM"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-layered-jar"
+            complexity: "HIGH"
+          - variation: "13-gradle-build"
+            complexity: "MEDIUM"
+          - variation: "14-jvm-tuned-nonroot"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t java-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} .
+          echo "| Java | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_php_benchmark:
+    if: >-
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark') &&
+      (github.event.inputs.language == 'all' || github.event.inputs.language == 'php')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variation: "01-simple-single-stage"
+            complexity: "LOW"
+          - variation: "02-phpfpm-nginx"
+            complexity: "MEDIUM"
+          - variation: "03-alpine-php-cli"
+            complexity: "LOW-MEDIUM"
+          - variation: "04-multi-stage"
+            complexity: "MEDIUM"
+          - variation: "05-non-root-user"
+            complexity: "MEDIUM"
+          - variation: "06-arg-env-config"
+            complexity: "LOW-MEDIUM"
+          - variation: "07-healthcheck"
+            complexity: "MEDIUM"
+          - variation: "08-buildkit-composer-cache"
+            complexity: "MEDIUM-HIGH"
+          - variation: "09-dev-xdebug"
+            complexity: "MEDIUM"
+          - variation: "10-opcache-production"
+            complexity: "MEDIUM"
+          - variation: "11-ci-runner-awscli"
+            complexity: "MEDIUM-HIGH"
+          - variation: "12-multi-stage-nonroot-healthcheck"
+            complexity: "HIGH"
+          - variation: "13-php-extensions-labels"
+            complexity: "MEDIUM"
+          - variation: "14-readonly-filesystem"
+            complexity: "HIGH"
+          - variation: "15-full-production-grade"
+            complexity: "HIGHEST"
+    steps:
+      - uses: actions/checkout@v4
+      - name: "PHP | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
+        run: |
+          START=$(date +%s)
+          docker build -t php-benchmark-${{ matrix.variation }} \
+            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} .
+          echo "| PHP | ${{ matrix.variation }} | ${{ matrix.complexity }} | $(($(date +%s)-START))s |" >> $GITHUB_STEP_SUMMARY
+
+  s9_benchmark_summary:
+    runs-on: ubuntu-latest
+    needs:
+      - s9_ruby_benchmark
+      - s9_python_benchmark
+      - s9_javascript_benchmark
+      - s9_go_benchmark
+      - s9_dotnet_benchmark
+      - s9_java_benchmark
+      - s9_php_benchmark
+    if: >-
+      always() &&
+      (github.event.inputs.scenario == 'all' || github.event.inputs.scenario == 'benchmark')
+    steps:
+      - name: Print benchmark completion summary
+        run: |
+          echo "## Build Time Benchmark — All Languages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Language   | Variations | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Ruby       | 15 | ${{ needs.s9_ruby_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python     | 15 | ${{ needs.s9_python_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JavaScript | 15 | ${{ needs.s9_javascript_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Go         | 15 | ${{ needs.s9_go_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| .NET       | 15 | ${{ needs.s9_dotnet_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java       | 15 | ${{ needs.s9_java_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PHP        | 15 | ${{ needs.s9_php_benchmark.result }} |" >> $GITHUB_STEP_SUMMARY

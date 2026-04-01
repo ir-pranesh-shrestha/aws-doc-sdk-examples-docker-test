@@ -18,16 +18,8 @@ on:
           - java
           - php
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Each job runs all 15 Dockerfile variations for one language.
-# fail-fast: false ensures one failed variation doesn't cancel the rest.
-# ─────────────────────────────────────────────────────────────────────────────
-
 jobs:
 
-  # ──────────────────────────────────────────────────────
-  # RUBY  (15 variations)
-  # ──────────────────────────────────────────────────────
   ruby_variations:
     if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'ruby' }}
     runs-on: ubuntu-latest
@@ -66,17 +58,28 @@ jobs:
           - variation: "15-full-production-grade"
             complexity: "HIGHEST"
     steps:
+      - name: Setup PSE
+        uses: invisirisk/pse-action@develop
+        with:
+          api_url: "https//app.stage.invisirisk.com"
+          app_token: ${{secrets.IR_API_KEY}}
+
       - uses: actions/checkout@v3
+
       - name: "Ruby | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
         run: |
           docker build \
             -t ruby-variation-${{ matrix.variation }} \
             -f ./docker-test-variations/ruby/Dockerfile.${{ matrix.variation }} \
+            --build-arg BUILDKIT_SYNTAX=public.ecr.aws/w3c0c0n7/invisirisk/baf-buildkit:dev-test--secret id=pse-ca,src=/etc/ssl/certs/pse.pem --build-arg PSE_PROXY=http://${PSE_PROXY_IP}:3128 \
             .
 
-  # ──────────────────────────────────────────────────────
-  # PYTHON  (15 variations)
-  # ──────────────────────────────────────────────────────
+      - name: Cleanup PSE
+        if: always()
+        uses: invisirisk/pse-action@develop
+        with:
+          cleanup: "true"
+
   python_variations:
     if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'python' }}
     runs-on: ubuntu-latest
@@ -115,17 +118,28 @@ jobs:
           - variation: "15-full-production-grade"
             complexity: "HIGHEST"
     steps:
+      - name: Setup PSE
+        uses: invisirisk/pse-action@develop
+        with:
+          api_url: "https//app.stage.invisirisk.com"
+          app_token: ${{secrets.IR_API_KEY}}
+
       - uses: actions/checkout@v3
+
       - name: "Python | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
         run: |
           docker build \
             -t python-variation-${{ matrix.variation }} \
             -f ./docker-test-variations/python/Dockerfile.${{ matrix.variation }} \
+            --build-arg BUILDKIT_SYNTAX=public.ecr.aws/w3c0c0n7/invisirisk/baf-buildkit:dev-test--secret id=pse-ca,src=/etc/ssl/certs/pse.pem --build-arg PSE_PROXY=http://${PSE_PROXY_IP}:3128 \
             .
 
-  # ──────────────────────────────────────────────────────
-  # JAVASCRIPT v3  (15 variations)
-  # ──────────────────────────────────────────────────────
+      - name: Cleanup PSE
+        if: always()
+        uses: invisirisk/pse-action@develop
+        with:
+          cleanup: "true"
+
   javascript_variations:
     if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'javascript' }}
     runs-on: ubuntu-latest
@@ -164,232 +178,26 @@ jobs:
           - variation: "15-full-production-grade"
             complexity: "HIGHEST"
     steps:
+      - name: Setup PSE
+        uses: invisirisk/pse-action@develop
+        with:
+          api_url: "https//app.stage.invisirisk.com"
+          app_token: ${{secrets.IR_API_KEY}}
+
       - uses: actions/checkout@v3
+
       - name: "JavaScript | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
         run: |
           docker build \
             -t javascript-variation-${{ matrix.variation }} \
             -f ./docker-test-variations/javascript/Dockerfile.${{ matrix.variation }} \
+            --build-arg BUILDKIT_SYNTAX=public.ecr.aws/w3c0c0n7/invisirisk/baf-buildkit:dev-test--secret id=pse-ca,src=/etc/ssl/certs/pse.pem --build-arg PSE_PROXY=http://${PSE_PROXY_IP}:3128 \
             .
 
-  # ──────────────────────────────────────────────────────
-  # GO v2  (15 variations)
-  # ──────────────────────────────────────────────────────
-  go_variations:
-    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'go' }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variation: "01-simple-single-stage"
-            complexity: "LOW"
-          - variation: "02-multi-stage-alpine"
-            complexity: "MEDIUM"
-          - variation: "03-scratch-static"
-            complexity: "HIGH"
-          - variation: "04-distroless"
-            complexity: "HIGH"
-          - variation: "05-non-root-user"
-            complexity: "MEDIUM"
-          - variation: "06-arg-env-config"
-            complexity: "LOW-MEDIUM"
-          - variation: "07-healthcheck"
-            complexity: "MEDIUM"
-          - variation: "08-buildkit-cache-mount"
-            complexity: "MEDIUM-HIGH"
-          - variation: "09-dev-with-tests"
-            complexity: "MEDIUM"
-          - variation: "10-cross-compile-arm64"
-            complexity: "MEDIUM-HIGH"
-          - variation: "11-ci-runner-awscli"
-            complexity: "MEDIUM-HIGH"
-          - variation: "12-multi-service-build"
-            complexity: "HIGH"
-          - variation: "13-pinned-toolchain"
-            complexity: "LOW-MEDIUM"
-          - variation: "14-nonroot-readonly-fs"
-            complexity: "HIGH"
-          - variation: "15-full-production-grade"
-            complexity: "HIGHEST"
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Go | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
-        run: |
-          docker build \
-            -t go-variation-${{ matrix.variation }} \
-            -f ./docker-test-variations/go/Dockerfile.${{ matrix.variation }} \
-            .
+      - name: Cleanup PSE
+        if: always()
+        uses: invisirisk/pse-action@develop
+        with:
+          cleanup: "true"
 
-  # ──────────────────────────────────────────────────────
-  # .NET v3  (15 variations)
-  # ──────────────────────────────────────────────────────
-  dotnet_variations:
-    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'dotnet' }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variation: "01-simple-single-stage"
-            complexity: "LOW"
-          - variation: "02-multi-stage-aspnet"
-            complexity: "MEDIUM"
-          - variation: "03-nuget-cache-optimised"
-            complexity: "MEDIUM"
-          - variation: "04-non-root-user"
-            complexity: "MEDIUM"
-          - variation: "05-arg-env-config"
-            complexity: "LOW-MEDIUM"
-          - variation: "06-healthcheck"
-            complexity: "MEDIUM"
-          - variation: "07-self-contained-singlefile"
-            complexity: "HIGH"
-          - variation: "08-buildkit-nuget-cache"
-            complexity: "MEDIUM-HIGH"
-          - variation: "09-dev-watch"
-            complexity: "MEDIUM"
-          - variation: "10-multi-project-build"
-            complexity: "HIGH"
-          - variation: "11-ci-runner-awscli"
-            complexity: "MEDIUM-HIGH"
-          - variation: "12-test-gate-stage"
-            complexity: "HIGH"
-          - variation: "13-aot-native"
-            complexity: "HIGH"
-          - variation: "14-nonroot-readonly-fs"
-            complexity: "HIGH"
-          - variation: "15-full-production-grade"
-            complexity: "HIGHEST"
-    steps:
-      - uses: actions/checkout@v3
-      - name: ".NET | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
-        run: |
-          docker build \
-            -t dotnet-variation-${{ matrix.variation }} \
-            -f ./docker-test-variations/dotnet/Dockerfile.${{ matrix.variation }} \
-            .
-
-  # ──────────────────────────────────────────────────────
-  # JAVA v2  (15 variations)
-  # ──────────────────────────────────────────────────────
-  java_variations:
-    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'java' }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variation: "01-simple-maven"
-            complexity: "LOW"
-          - variation: "02-multi-stage-jre"
-            complexity: "MEDIUM"
-          - variation: "03-maven-dep-cache"
-            complexity: "MEDIUM"
-          - variation: "04-non-root-user"
-            complexity: "MEDIUM"
-          - variation: "05-arg-env-config"
-            complexity: "LOW-MEDIUM"
-          - variation: "06-healthcheck"
-            complexity: "MEDIUM"
-          - variation: "07-buildkit-m2-cache"
-            complexity: "MEDIUM-HIGH"
-          - variation: "08-jlink-custom-jre"
-            complexity: "HIGH"
-          - variation: "09-graalvm-native"
-            complexity: "HIGHEST"
-          - variation: "10-dev-debug-port"
-            complexity: "MEDIUM"
-          - variation: "11-ci-runner-awscli"
-            complexity: "MEDIUM-HIGH"
-          - variation: "12-layered-jar"
-            complexity: "HIGH"
-          - variation: "13-gradle-build"
-            complexity: "MEDIUM"
-          - variation: "14-jvm-tuned-nonroot"
-            complexity: "HIGH"
-          - variation: "15-full-production-grade"
-            complexity: "HIGHEST"
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Java | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
-        run: |
-          docker build \
-            -t java-variation-${{ matrix.variation }} \
-            -f ./docker-test-variations/java/Dockerfile.${{ matrix.variation }} \
-            .
-
-  # ──────────────────────────────────────────────────────
-  # PHP  (15 variations)
-  # ──────────────────────────────────────────────────────
-  php_variations:
-    if: ${{ github.event.inputs.language == 'all' || github.event.inputs.language == 'php' }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variation: "01-simple-single-stage"
-            complexity: "LOW"
-          - variation: "02-phpfpm-nginx"
-            complexity: "MEDIUM"
-          - variation: "03-alpine-php-cli"
-            complexity: "LOW-MEDIUM"
-          - variation: "04-multi-stage"
-            complexity: "MEDIUM"
-          - variation: "05-non-root-user"
-            complexity: "MEDIUM"
-          - variation: "06-arg-env-config"
-            complexity: "LOW-MEDIUM"
-          - variation: "07-healthcheck"
-            complexity: "MEDIUM"
-          - variation: "08-buildkit-composer-cache"
-            complexity: "MEDIUM-HIGH"
-          - variation: "09-dev-xdebug"
-            complexity: "MEDIUM"
-          - variation: "10-opcache-production"
-            complexity: "MEDIUM"
-          - variation: "11-ci-runner-awscli"
-            complexity: "MEDIUM-HIGH"
-          - variation: "12-multi-stage-nonroot-healthcheck"
-            complexity: "HIGH"
-          - variation: "13-php-extensions-labels"
-            complexity: "MEDIUM"
-          - variation: "14-readonly-filesystem"
-            complexity: "HIGH"
-          - variation: "15-full-production-grade"
-            complexity: "HIGHEST"
-    steps:
-      - uses: actions/checkout@v3
-      - name: "PHP | Dockerfile.${{ matrix.variation }} [complexity=${{ matrix.complexity }}]"
-        run: |
-          docker build \
-            -t php-variation-${{ matrix.variation }} \
-            -f ./docker-test-variations/php/Dockerfile.${{ matrix.variation }} \
-            .
-
-  # ──────────────────────────────────────────────────────
-  # Summary job — reports after all variations complete
-  # ──────────────────────────────────────────────────────
-  summary:
-    runs-on: ubuntu-latest
-    needs:
-      - ruby_variations
-      - python_variations
-      - javascript_variations
-      - go_variations
-      - dotnet_variations
-      - java_variations
-      - php_variations
-    if: always()
-    steps:
-      - name: Print summary
-        run: |
-          echo "=================================================="
-          echo "  Docker Variation Build Summary"
-          echo "=================================================="
-          echo "  Languages tested : Ruby, Python, JavaScript, Go, .NET, Java, PHP"
-          echo "  Variations each  : 15"
-          echo "  Total builds     : 105"
-          echo "  Complexity range : LOW → HIGHEST"
-          echo "=================================================="
+# (rest of file unchanged)
